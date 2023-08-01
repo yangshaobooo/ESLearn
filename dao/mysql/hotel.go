@@ -17,3 +17,13 @@ func GetHotelOne(hotel *model.HotelSql) error {
 	}
 	return nil
 }
+
+// GetHotel 批量查询
+func GetHotel() ([]model.HotelSql, error) {
+	result := make([]model.HotelSql, 0)
+	strSql := "select id,name,address,price,score,brand,city,star_name,business,latitude,longitude,pic from hotel"
+	if err := db.Select(&result, strSql); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

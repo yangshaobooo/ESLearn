@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"io/ioutil"
 	"log"
 	"strconv"
 	"strings"
@@ -58,5 +60,65 @@ func (es *esClient) InsertOne(name, body string) error {
 		return err
 	}
 	defer res.Body.Close()
+	return nil
+}
+
+// GetOneDoc 查询一条文档
+func (es *esClient) GetOneDoc(name, docId string) ([]byte, error) {
+	req := esapi.GetRequest{
+		Index:      name,
+		DocumentID: docId,
+	}
+	res, err := req.Do(context.Background(), es.Client)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.IsError() {
+		return nil, fmt.Errorf("查询请求失败：%s", res.Status())
+	}
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应内容失败：%s", err)
+	}
+
+	return data, nil
+}
+
+// UpdateDocument 更新一个文档  全量更新
+func (es *esClient) UpdateDocument(index, documentID string, updateBody string) error {
+	req := esapi.UpdateRequest{
+		Index:      index,
+		DocumentID: documentID,
+		Body:       strings.NewReader(updateBody),
+	}
+
+	res, err := req.Do(context.Background(), es.Client)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("更新请求失败：%s", res.Status())
+	}
+
+	return nil
+}
+
+// DeleteDocument 删除一个文档
+func (es *esClient) DeleteDocument(index, documentID string) error {
+	req := esapi.DeleteRequest{
+		Index:      index,
+		DocumentID: documentID,
+	}
+	res, err := req.Do(context.Background(), es.Client)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.IsError() {
+		return fmt.Errorf("删除请求失败：%s", res.Status())
+	}
 	return nil
 }
